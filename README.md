@@ -1,3 +1,5 @@
+[![mermaid](./mermaid.svg)](https://www.npmjs.com/package/mermaid)
+
 ## Using *`raw.githubusercontent.com`*
 
 **`https://raw.githubusercontent.com/vonas/playground/mermaid/christmas.png`**
