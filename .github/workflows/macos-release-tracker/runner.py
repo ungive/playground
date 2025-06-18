@@ -8,17 +8,35 @@ import json
 import os
 from dataclasses import dataclass
 
-REPO_NAME = "ungive/playground"
-APP_ID = "1425660"
+# Environment variables:
+# REPO_NAME: Repository name in format "user/repo"
+# ISSUE_TITLE_FORMAT: Issue title format, {} is replaced with the macOS version
+# ISSUE_LABELS: Comma-separated list of issue labels (optional)
+# APP_ID: The GitHub app ID
+# INSTALLATION_ID: The GitHub app installation ID
+# APP_PRIVATE_KEY: The GitHub app private key in PEM format
+
+
+def get_env(name, mandatory=True):
+    value = os.environ.get(name)
+    if mandatory and (value is None or len(value) == 0):
+        raise RuntimeError(f"Missing environment variable {name}")
+    return value
+
+
+REPO_NAME = get_env("REPO_NAME")
+ISSUE_TITLE_FORMAT = get_env("ISSUE_TITLE_FORMAT")
+ISSUE_LABELS = get_env("ISSUE_LABELS", False)
+APP_ID = get_env("APP_ID")
+INSTALLATION_ID = get_env("INSTALLATION_ID")
+PRIVATE_KEY_PEM_ENV = get_env("APP_PRIVATE_KEY")
+
 APP_NAME = "macos-release-tracker"
-INSTALLATION_ID = 71955299
 VERSION_HISTORY_SOURCE = "https://en.wikipedia.org/wiki/MacOS_version_history"
-ISSUE_TITLE_FORMAT = "Test on macOS {version} {build}"
-ISSUE_TITLE_REGEX = r"^.*macOS\s+(\d+)\.(\d+)(?:\.(\d+))?\s+([A-Za-z0-9]{2,}).*$"
-ISSUE_LABELS = ["automated issue", "help wanted", "macOS compatibility"]
+ISSUE_VERSION_FORMAT = "macOS {version} {build}"
+ISSUE_VERSION_REGEX = r"^.*macOS\s+(\d+)\.(\d+)(?:\.(\d+))?\s+([A-Za-z0-9]{2,}).*$"
 
 PRIVATE_KEY_PATH = None  # Set for testing
-PRIVATE_KEY_PEM_ENV = os.environ.get("APP_PRIVATE_KEY")
 if PRIVATE_KEY_PATH is not None:
     with open(PRIVATE_KEY_PATH, "r") as f:
         PRIVATE_KEY_PEM = f.read()
@@ -26,6 +44,8 @@ elif PRIVATE_KEY_PEM_ENV is not None:
     PRIVATE_KEY_PEM = PRIVATE_KEY_PEM_ENV
 else:
     raise RuntimeError("Missing GitHub app private key")
+
+ISSUE_LABELS = ISSUE_LABELS.split(',') if ISSUE_LABELS else []
 
 
 @dataclass
@@ -222,7 +242,9 @@ def create_issue(title, body, token):
 
 def issue_details_for_mac_release(version: MacVersion):
     full_version = version.full_version()
-    title = ISSUE_TITLE_FORMAT.format(version=full_version, build=version.build_number)
+    title = ISSUE_TITLE_FORMAT.format(
+        ISSUE_VERSION_FORMAT.format(version=full_version, build=version.build_number)
+    )
     body = f"""
 New macOS version available:
 
@@ -242,7 +264,7 @@ def main():
     print(f"Latest macOS version: {latest_version}")
 
     token = get_installation_access_token()
-    posted_versions = search_issues(ISSUE_TITLE_REGEX, token)
+    posted_versions = search_issues(ISSUE_VERSION_REGEX, token)
     need_issue = all([latest_version.is_newer_than(other) for other in posted_versions])
 
     if need_issue:

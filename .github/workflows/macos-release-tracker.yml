@@ -2,16 +2,22 @@ name: macOS Release Tracker
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/5 * * * *' # every 8 hours
+  workflow_dispatch:
 
 jobs:
   check-macos-releases:
     runs-on: ubuntu-latest
     env:
+      REPO_NAME: ungive/playground
+      APP_ID: 1425660
+      INSTALLATION_ID: 71955299
+      ISSUE_TITLE_FORMAT: Test on {}
+      ISSUE_LABELS: automated issue,macOS releases,help wanted
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
