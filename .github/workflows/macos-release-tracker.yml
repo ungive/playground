@@ -2,8 +2,7 @@ name: macOS Release Tracker
 
 on:
   schedule:
-    - cron: '19 * * * *'
-  workflow_dispatch:
+    - cron: '*/1 * * * *'
 
 jobs:
   check-macos-releases:
